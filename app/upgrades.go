@@ -12,7 +12,9 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	ibcconnectiontypes "github.com/cosmos/ibc-go/modules/core/03-connection/types"
+	ibcconnectiontypes "github.com/cosmos/ibc-go/v2/modules/core/03-connection/types"
+	"github.com/cosmos/ibc-go/v2/modules/core/exported"
+	ibcctmtypes "github.com/cosmos/ibc-go/v2/modules/light-clients/07-tendermint/types"
 )
 
 var (
@@ -125,9 +127,27 @@ var handlers = map[string]appUpgrade{
 		},
 		Added: []string{authz.ModuleName, feegrant.ModuleName},
 	},
+	"green": {
+		Handler: func(app *App, ctx sdk.Context, plan upgradetypes.Plan) (module.VersionMap, error) {
+			app.IBCKeeper.ClientKeeper.IterateClients(ctx, func(clientId string, state exported.ClientState) bool {
+				tc, ok := (state).(*ibcctmtypes.ClientState)
+				if ok {
+					tc.AllowUpdateAfterExpiry = true
+					app.IBCKeeper.ClientKeeper.SetClientState(ctx, clientId, state)
+				}
+				return false
+			})
+			orderedMigration := []moduleUpgradeVersion{
+				{"metadata", 2},
+			}
+			ctx.Logger().Info("NOTICE: Starting migrations. This may take a significant amount of time to complete. Do not restart node.")
+			return RunOrderedMigrations(app, ctx, orderedMigration)
+		},
+	},
 	// TODO - Add new upgrade definitions here.
 }
 
+// RunOrderedMigrations runs migrations in a defined order.
 // NOTE: We needed to modify the behavior of the cosmos-sdk's migrations.  Order DOES matter in some cases and their migration uses a map and not a list.
 // This does not guarantee order in the migration process. i.e., The x/bank module needs to run before the x/auth module for version 1 to 2
 func RunOrderedMigrations(app *App, ctx sdk.Context, migrationOrder []moduleUpgradeVersion) (module.VersionMap, error) {
