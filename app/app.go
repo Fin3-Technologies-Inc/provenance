@@ -120,6 +120,7 @@ import (
 	msgfeesmodule "github.com/provenance-io/provenance/x/msgfees/module"
 	msgfeestypes "github.com/provenance-io/provenance/x/msgfees/types"
 	"github.com/provenance-io/provenance/x/name"
+	nameclient "github.com/provenance-io/provenance/x/name/client"
 	namekeeper "github.com/provenance-io/provenance/x/name/keeper"
 	nametypes "github.com/provenance-io/provenance/x/name/types"
 	namewasm "github.com/provenance-io/provenance/x/name/wasm"
@@ -166,6 +167,7 @@ var (
 			upgradeclient.CancelProposalHandler,
 			ibcclientclient.UpdateClientProposalHandler,
 			ibcclientclient.UpgradeProposalHandler,
+			nameclient.ProposalHandler,
 		)...,
 		),
 		params.AppModuleBasic{},
@@ -431,7 +433,6 @@ func New(
 	)
 
 	// Init CosmWasm module
-	var wasmRouter = bApp.Router()
 	wasmDir := filepath.Join(homePath, "data", "wasm")
 
 	wasmWrap := WasmWrapper{Wasm: wasm.DefaultWasmConfig()}
@@ -446,6 +447,7 @@ func New(
 	encoderRegistry.RegisterEncoder(nametypes.RouterKey, namewasm.Encoder)
 	encoderRegistry.RegisterEncoder(attributetypes.RouterKey, attributewasm.Encoder)
 	encoderRegistry.RegisterEncoder(markertypes.RouterKey, markerwasm.Encoder)
+	encoderRegistry.RegisterEncoder(metadatatypes.RouterKey, metadatawasm.Encoder)
 
 	// Init CosmWasm query integrations
 	querierRegistry := provwasm.NewQuerierRegistry()
@@ -456,6 +458,10 @@ func New(
 
 	// Add the staking feature and indicate that provwasm contracts can be run on this chain.
 	supportedFeatures := "staking,provenance,stargate"
+
+	wasmMessageRouter := MessageRouterFunc(func(msg sdk.Msg) baseapp.MsgServiceHandler {
+		return pioMsgFeesRouter.Handler(msg)
+	})
 
 	// The last arguments contain custom message handlers, and custom query handlers,
 	// to allow smart contracts to use provenance modules.
@@ -471,8 +477,7 @@ func New(
 		&app.IBCKeeper.PortKeeper,
 		scopedWasmKeeper,
 		app.TransferKeeper,
-		wasmRouter,
-		app.MsgServiceRouter(),
+		wasmMessageRouter,
 		app.GRPCQueryRouter(),
 		wasmDir,
 		wasmConfig,
