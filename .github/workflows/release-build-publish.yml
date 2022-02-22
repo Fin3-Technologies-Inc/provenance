@@ -1,4 +1,4 @@
-name: Build and Publish
+name: Fin3 Build and Publish
 
 on:
   release:
