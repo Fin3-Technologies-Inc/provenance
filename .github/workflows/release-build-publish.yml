@@ -56,7 +56,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Run make devnet-start
-        run: make devnet-start
+        run: make docker-build-dev devnet-start
 
       - name: Build and push service docker
         uses: docker/build-push-action@v2
