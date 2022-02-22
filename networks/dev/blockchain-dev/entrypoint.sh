@@ -28,6 +28,11 @@ if ! [ -f ${PIO_HOME}/config/genesis.json ]; then
   "${BINARY}" -t --home "${PIO_HOME}" add-genesis-root-name validator provenance --keyring-backend test 
   "${BINARY}" -t --home "${PIO_HOME}" add-genesis-marker ${num_accounts}00000000000000000000nhash --manager validator --access mint,burn,admin,withdraw,deposit --activate --keyring-backend test 
   "${BINARY}" -t --home "${PIO_HOME}" gentx validator 100000000000000nhash --keyring-backend test --chain-id=chain-dev
+  "${BINARY}" -t --home "${PIO_HOME}" add-genesis-msg-fee /provenance.name.v1.MsgBindNameRequest 10000000000nhash
+  "${BINARY}" -t --home "${PIO_HOME}" add-genesis-msg-fee /provenance.marker.v1.MsgAddMarkerRequest 100000000000nhash
+  "${BINARY}" -t --home "${PIO_HOME}" add-genesis-msg-fee /provenance.attribute.v1.MsgAddAttributeRequest 10000000000nhash
+  "${BINARY}" -t --home "${PIO_HOME}" add-genesis-msg-fee /provenance.metadata.v1.MsgWriteScopeRequest 10000000000nhash
+  "${BINARY}" -t --home "${PIO_HOME}" add-genesis-msg-fee /provenance.metadata.v1.MsgP8eMemorializeContractRequest 10000000000nhash
   "${BINARY}" -t --home "${PIO_HOME}" collect-gentxs 
   "${BINARY}" -t --home "${PIO_HOME}" config set rpc.laddr tcp://0.0.0.0:26657
   "${BINARY}" -t --home "${PIO_HOME}" config set api.enable true
